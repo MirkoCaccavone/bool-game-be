@@ -17,13 +17,8 @@ import cors from 'cors';
 // Inizializzo l'app Express
 const app = express();
 
-// // importiamo il modulo express
-// const express = require('express')
-// const app = express();
-const port = 3000;
-// const cors = require('cors')
-// import dotenv from 'dotenv';
-// dotenv.config();
+const port = process.env.PORT;
+
 
 // importo i middleware
 import notFound from './middleware/notFound.js';
