@@ -5,7 +5,7 @@ rotte che serviranno
 
 per i prodotti 
 
-index    per visualizzare tutti i prodotti 
+index    per visualizzare tutti i prodotti (ok)
 show     per visualizzare un solo prodotto per id
 search    per cercare i prodotti tramite nome 
 vediamo come scalare i prodotti
