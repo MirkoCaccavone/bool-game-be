@@ -1,11 +1,29 @@
 
-// importiamo il modulo express
-const express = require('express')
-const app = express();
-const port = process.env.PORT;
-const cors = require('cors')
+// Importo dotenv per caricare le variabili d'ambiente dal file .env
 import dotenv from 'dotenv';
+
+// Carico le variabili d'ambiente (configuro la chiave segreta di Stripe e altre impostazioni)
 dotenv.config();
+
+// Importo Express per gestire il server
+import express from 'express';
+
+// Importo le rotte per i pagamenti
+import paymentRoutes from './routes/payment.js';
+
+// Importo cors per abilitare le richieste cross-origin
+import cors from 'cors';
+
+// Inizializzo l'app Express
+const app = express();
+
+// // importiamo il modulo express
+// const express = require('express')
+// const app = express();
+// const port = process.env.PORT;
+// const cors = require('cors')
+// import dotenv from 'dotenv';
+// dotenv.config();
 
 // importo i middleware
 const notFound = require('./middleware/notFound');
@@ -25,6 +43,9 @@ app.use(express.static('public'));
 app.get('/api', (req, res) => {
     res.send("Server di boolGame")
 });
+
+// Imposto il percorso per le API di pagamento
+app.use('/api/payment', paymentRoutes);
 
 // utilizzo middleware di gestione not found 404
 app.use(notFound);
