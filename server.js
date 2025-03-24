@@ -14,6 +14,9 @@ import cors from 'cors';
 // Importo le rotte per i pagamenti
 // import paymentRoutes from './routes/payments.js';
 
+// Importo la rotta del Carrello per lo shopping
+import cartRoutes from './routes/cartRoutes.js'
+
 // Inizializzo l'app Express
 const app = express();
 
@@ -34,7 +37,8 @@ app.use(cors({ origin: process.env.FE_APP }))
 // Serve i file statici dalla cartella 'public'
 app.use(express.static('public'));
 
-
+// Importo il percorso per le API del carrello (cart)
+app.use('/api/cart', cartRoutes);
 
 // Imposto il percorso per le API di pagamento
 // app.use('/api/payments', paymentRoutes);
