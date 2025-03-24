@@ -9,7 +9,7 @@ dotenv.config();
 import express from 'express';
 
 // Importo le rotte per i pagamenti
-import paymentRoutes from './routes/payment.js';
+// import paymentRoutes from './routes/payments.js';
 
 // Importo cors per abilitare le richieste cross-origin
 import cors from 'cors';
@@ -45,7 +45,7 @@ app.get('/api', (req, res) => {
 });
 
 // Imposto il percorso per le API di pagamento
-app.use('/api/payment', paymentRoutes);
+// app.use('/api/payments', paymentRoutes);
 
 // utilizzo middleware di gestione not found 404
 app.use(notFound);
