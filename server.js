@@ -20,14 +20,14 @@ const app = express();
 // // importiamo il modulo express
 // const express = require('express')
 // const app = express();
-// const port = process.env.PORT;
+const port = 3000;
 // const cors = require('cors')
 // import dotenv from 'dotenv';
 // dotenv.config();
 
 // importo i middleware
-const notFound = require('./middleware/notFound');
-const errorHandler = require('./middleware/errorHandler');
+import notFound from './middleware/notFound.js';
+import errorHandler from './middleware/errorHandler.js';
 
 
 // registro il body-parser per "application/json"

@@ -1,5 +1,5 @@
 // Definizione della funzione middleware per la gestione degli errori
-function errorHandler(err, req, res, next) {
+export default function errorHandler(err, req, res, next) {
     // Imposta il codice di stato della risposta a 500 (Errore interno del server)
     res.status(500);
 
@@ -9,5 +9,3 @@ function errorHandler(err, req, res, next) {
     });
 };
 
-// Esporta la funzione errorHandler in modo che possa essere utilizzata in altre parti dell'applicazione
-module.exports = errorHandler;
