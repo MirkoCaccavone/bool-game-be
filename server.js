@@ -8,11 +8,11 @@ dotenv.config();
 // Importo Express per gestire il server
 import express from 'express';
 
-// Importo le rotte per i pagamenti
-// import paymentRoutes from './routes/payments.js';
-
 // Importo cors per abilitare le richieste cross-origin
 import cors from 'cors';
+
+// Importo le rotte per i pagamenti
+// import paymentRoutes from './routes/payments.js';
 
 // Inizializzo l'app Express
 const app = express();
@@ -34,13 +34,15 @@ app.use(cors({ origin: process.env.FE_APP }))
 // Serve i file statici dalla cartella 'public'
 app.use(express.static('public'));
 
+
+
+// Imposto il percorso per le API di pagamento
+// app.use('/api/payments', paymentRoutes);
+
 // Gestisce la route principale ('/')
 app.get('/api', (req, res) => {
     res.send("Server di boolGame")
 });
-
-// Imposto il percorso per le API di pagamento
-// app.use('/api/payments', paymentRoutes);
 
 // utilizzo middleware di gestione not found 404
 app.use(notFound);
