@@ -39,8 +39,8 @@ export function show(req, res) {
         FROM products p
         JOIN categories c ON p.id = c.product_id
         LEFT JOIN products_image pi ON pi.product_id = p.id AND pi.isCover = TRUE
-        WHERE p.id = ?
-    `;
+        WHERE p.id = ?`
+        ;
 
     db.query(sql, [req.params.id], (err, results) => {
         if (err) return res.status(500).json({ error: 'Database query failed' });
@@ -78,8 +78,8 @@ export function search(req, res) {
         FROM products p
         LEFT JOIN categories c ON p.id = c.product_id
         LEFT JOIN products_image pi ON pi.product_id = p.id AND pi.isCover = TRUE
-        WHERE 1=1
-    `;
+        WHERE 1=1`
+        ;
     const queryParams = [];
 
     if (name) {
