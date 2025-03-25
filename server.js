@@ -21,6 +21,7 @@ const port = process.env.PORT;
 
 
 // importo i middleware
+import imagePathMiddleware from './middleware/imagePath.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -40,6 +41,9 @@ app.use(express.json());
 
 // Serve i file statici dalla cartella 'public'
 app.use(express.static('public'));
+
+// registro  il middleware del path delle img
+app.use(imagePathMiddleware);
 
 
 

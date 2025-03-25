@@ -4,43 +4,27 @@ import db from '../config/db.js';
 
 // funzione INDEX per ottenere tutti i prodotti
 export function index(req, res) {
-    // Query per ottenere tutti i prodotti con la categoria associata
+    // Query per ottenere i prodotti con la categoria e un'unica immagine principale
     const sql = `
-        SELECT products.*, categories.category_name
-        FROM products
-        LEFT JOIN categories ON products.id = categories.product_id
+        SELECT p.*, c.category_name, 
+               COALESCE(pi.image_url, p.image_url) AS final_image
+        FROM products p
+        JOIN categories c ON p.id = c.product_id
+        LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE
     `;
 
     db.query(sql, (err, results) => {
-        if (err)
-            return res.status(500).json({ error: 'Database query failed' });
+        if (err) return res.status(500).json({ error: 'Database query failed' });
 
-        const productPromises = results.map(product => {
-            return new Promise((resolve, reject) => {
-                // Se la categoria è 'Console' o 'Accessorio', recuperiamo le immagini
-                if (product.category_name === 'Console' || product.category_name === 'Accessorio') {
-                    const imageSql = 'SELECT * FROM product_image WHERE product_id = ?';
-                    db.query(imageSql, [product.id], (err, imageResults) => {
-                        if (err) {
-                            reject(err);
-                        }
-                        // Se ci sono immagini, le aggiungiamo al prodotto
-                        const images = imageResults.map(image => req.imagePath ? req.imagePath + image.image_url : image.image_url);
-                        product.images = images;
-                        resolve(product);
-                    });
-                } else {
-                    // Altrimenti, aggiungiamo solo l'immagine principale
-                    product.image_url = req.imagePath ? req.imagePath + product.image_url : product.image_url;
-                    resolve(product);
-                }
-            });
+        const products = results.map(product => {
+            product.image_url = product.final_image
+                ? `${req.imagePath}${product.final_image}`
+                : null;
+            delete product.final_image; // Rimuoviamo la colonna di supporto
+            return product;
         });
 
-        // Aspettiamo che tutte le promesse siano risolte
-        Promise.all(productPromises)
-            .then(products => res.json(products))
-            .catch(err => res.status(500).json({ error: 'Database query failed' }));
+        res.json(products);
     });
 }
 
@@ -48,40 +32,35 @@ export function index(req, res) {
 // funzione SHOW per ottenere un singolo prodotto
 export function show(req, res) {
     const sql = `
-        SELECT products.*, categories.category_name
-        FROM products
-        LEFT JOIN categories ON products.id = categories.product_id
-        WHERE products.id = ?
+        SELECT p.*, c.category_name, 
+               COALESCE(pi.image_url, p.image_url) AS final_image
+        FROM products p
+        JOIN categories c ON p.id = c.product_id
+        LEFT JOIN products_image pi ON pi.product_id = p.id AND pi.isCover = TRUE
+        WHERE p.id = ?
     `;
 
     db.query(sql, [req.params.id], (err, results) => {
-        if (err)
-            return res.status(500).json({ error: 'Database query failed' });
-
-        if (results.length === 0)
-            return res.status(404).json({ error: 'Product not found' });
+        if (err) return res.status(500).json({ error: 'Database query failed' });
+        if (results.length === 0) return res.status(404).json({ error: 'Product not found' });
 
         const product = results[0];
+        product.image_url = product.final_image
+            ? `${req.imagePath}${product.final_image}`
+            : null;
+        delete product.final_image;
 
-        // Se la categoria è 'Console' o 'Accessori', recuperiamo le immagini
-        if (product.category_name === 'Console' || product.category_name === 'Accessori') {
-            const imageSql = 'SELECT * FROM product_image WHERE product_id = ?';
-            db.query(imageSql, [product.id], (err, imageResults) => {
-                if (err) {
-                    return res.status(500).json({ error: 'Database query failed' });
-                }
-                // Aggiungiamo le immagini multiple
-                const images = imageResults.map(image => req.imagePath ? req.imagePath + image.image_url : image.image_url);
-                product.images = images;
-                res.json(product);
-            });
-        } else {
-            // Altrimenti, aggiungiamo solo l'immagine principale
-            product.image_url = req.imagePath ? req.imagePath + product.image_url : product.image_url;
+        // Ora prendiamo tutte le immagini del prodotto per il carosello
+        const imageSql = `SELECT image_url FROM products_image WHERE product_id = ?`;
+        db.query(imageSql, [product.id], (err, imageResults) => {
+            if (err) return res.status(500).json({ error: 'Database query failed' });
+
+            product.images = imageResults.map(image => `${req.imagePath}${image.image_url}`);
             res.json(product);
-        }
+        });
     });
 }
+
 
 
 // funzione SEARCH per cercare un prodotto
@@ -93,51 +72,40 @@ export function search(req, res) {
     }
 
     let sql = `
-        SELECT products.*, categories.category_name
-        FROM products
-        LEFT JOIN categories ON products.id = categories.product_id
+        SELECT p.*, c.category_name, 
+               COALESCE(pi.image_url, p.image_url) AS final_image
+        FROM products p
+        LEFT JOIN categories c ON p.id = c.product_id
+        LEFT JOIN products_image pi ON pi.product_id = p.id AND pi.isCover = TRUE
         WHERE 1=1
     `;
     const queryParams = [];
 
     if (name) {
-        sql += ' AND products.name LIKE ?';
+        sql += ' AND p.name LIKE ?';
         queryParams.push(`%${name}%`);
     }
 
     if (category) {
-        sql += ' AND categories.category_name = ?';
+        sql += ' AND c.category_name = ?';
         queryParams.push(category);
     }
 
     db.query(sql, queryParams, (err, results) => {
-        if (err)
-            return res.status(500).json({ error: 'Database query failed' });
+        if (err) return res.status(500).json({ error: 'Database query failed' });
 
-        const productPromises = results.map(product => {
-            return new Promise((resolve, reject) => {
-                if (product.category_name === 'Console' || product.category_name === 'Accessori') {
-                    const imageSql = 'SELECT * FROM product_image WHERE product_id = ?';
-                    db.query(imageSql, [product.id], (err, imageResults) => {
-                        if (err) {
-                            reject(err);
-                        }
-                        const images = imageResults.map(image => req.imagePath ? req.imagePath + image.image_url : image.image_url);
-                        product.images = images;
-                        resolve(product);
-                    });
-                } else {
-                    product.image_url = req.imagePath ? req.imagePath + product.image_url : product.image_url;
-                    resolve(product);
-                }
-            });
+        const products = results.map(product => {
+            product.image_url = product.final_image
+                ? `${req.imagePath}${product.final_image}`
+                : null;
+            delete product.final_image;
+            return product;
         });
 
-        Promise.all(productPromises)
-            .then(products => res.json(products))
-            .catch(err => res.status(500).json({ error: 'Database query failed' }));
+        res.json(products);
     });
 }
+
 
 
 
