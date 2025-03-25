@@ -3,13 +3,12 @@ import { index, show, search } from "../controllers/productController.js";
 
 const router = express.Router();
 
-
-
-// index visualizza tutti gli elementi
-router.route("/", index);
-// show visualizza un singolo elemento
-router.route("/:id", show);
 // search cerca un elemento
-router.route("/search", search);
+router.route("/search").get(search);
+// index visualizza tutti gli elementi
+router.route("/").get(index);
+// show visualizza un singolo elemento
+router.route("/:id").get(show);
+
 
 export default router;

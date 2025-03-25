@@ -34,7 +34,8 @@ import orderRoutes from './routes/orderRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js'
 
-// Importo i middleware
+// importo i middleware
+import imagePathMiddleware from './middleware/imagePath.js';
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
@@ -43,6 +44,9 @@ app.use(express.static('public'));
 
 // Rotte per il carrello
 app.use('/api/cart', cartRoutes);
+
+// registro  il middleware del path delle img
+app.use(imagePathMiddleware);
 
 // Rotte per gli ordini
 app.use('/api/orders', orderRoutes);
@@ -53,13 +57,12 @@ app.use('/api/products', productRoutes);
 // Imposto il percorso per le API di pagamento
 app.use('/api/payment', paymentRoutes);
 
-
 // Gestisce la route principale ('/')
 app.get('/api', (req, res) => {
     res.send("Server di boolGame");
 });
 
-// Utilizzo middleware di gestione not found 404
+// utilizzo middleware di gestione not found 404
 app.use(notFound);
 
 // Utilizzo middleware di gestione errore server

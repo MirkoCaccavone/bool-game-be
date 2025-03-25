@@ -13,11 +13,9 @@ const connection = mysql.createConnection({
 
 // Test di connessione
 connection.connect((err) => {
-    if (err) {
-        console.error('Errore di connessione al database:', err);
-        return;
-    }
-    console.log('Connessione al database riuscita!');
+    if (err) throw err;
+    console.log('Connected to MySQL!');
+
 });
 
 export default connection;
