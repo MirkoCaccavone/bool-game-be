@@ -1,5 +1,5 @@
 // importiamo il file di connessione al database
-import db from '../config/db';
+import db from '../config/db.js';
 
 // funzione INDEX per ottenere tutti i prodotti
 export function index(req, res) {
