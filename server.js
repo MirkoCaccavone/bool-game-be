@@ -32,6 +32,7 @@ app.use((req, res, next) => {
 import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import productRoutes from './routes/productRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js'
 
 // Importo i middleware
 import notFound from './middleware/notFound.js';
@@ -48,6 +49,10 @@ app.use('/api/orders', orderRoutes);
 
 // Rotte per i prodotti
 app.use('/api/products', productRoutes);
+
+// Imposto il percorso per le API di pagamento
+app.use('/api/payment', paymentRoutes);
+
 
 // Gestisce la route principale ('/')
 app.get('/api', (req, res) => {
