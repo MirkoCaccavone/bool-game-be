@@ -39,7 +39,7 @@ app.use(express.json());
 
 
 // Serve i file statici dalla cartella 'public'
-app.use(express.static('public'));
+app.use(express.static('public/images'));
 
 
 
