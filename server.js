@@ -27,12 +27,19 @@ const port = process.env.PORT;
 import notFound from './middleware/notFound.js';
 import errorHandler from './middleware/errorHandler.js';
 
+// importo le routes
+import productRoutes from './routes/productRoutes.js';
+
+
+app.use(cors({ origin: process.env.FE_APP }))
+
+
 
 // registro il body-parser per "application/json"
 // interpreta quello che sarà passato come file JSON
 app.use(express.json());
 
-app.use(cors({ origin: process.env.FE_APP }))
+
 
 // Serve i file statici dalla cartella 'public'
 app.use(express.static('public'));
@@ -47,6 +54,8 @@ app.use('/api/cart', cartRoutes);
 app.get('/api', (req, res) => {
     res.send("Server di boolGame")
 });
+
+app.use('/api/products', productRoutes);
 
 // utilizzo middleware di gestione not found 404
 app.use(notFound);
