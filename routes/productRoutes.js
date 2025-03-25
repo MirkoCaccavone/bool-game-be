@@ -1,13 +1,15 @@
 import express from "express";
+import { index, show, search } from "../controllers/productController.js";
+
 const router = express.Router();
 
-const productController = require("../controllers/productController");
+
 
 // index visualizza tutti gli elementi
-router.route("/", productController.index);
+router.route("/", index);
 // show visualizza un singolo elemento
-router.route("/:id", productController.show);
+router.route("/:id", show);
 // search cerca un elemento
-router.route("/search", productController.search);
+router.route("/search", search);
 
 export default router;
