@@ -85,5 +85,19 @@ body-raw
 {
   "paymentIntentId": "qui andrà inserita la chiave che restituisce /payment/process",
   "order_id": 5,
-  "customerEmail": "sceglieremo una mail per l'acquirente",
+  "customerEmail": "sceglieremo una mail per l'acquirente"
 }
+
+<!-- ricerca tutti i prodotti -->
+GET: http://localhost:3000/api/products
+
+
+<!-- ricerca prodotto tramite id -->
+http://localhost:3000/api/products/3
+
+
+<!-- ricerca tramite nome  -->
+http://localhost:3000/api/products/search?name=play
+
+<!-- ricerca tramite categoria -->
+http://localhost:3000/api/products/search?category=gioco
