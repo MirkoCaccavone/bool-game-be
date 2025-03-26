@@ -106,6 +106,8 @@ export function verifyPayment(req, res) {
 
             // Creazione di un PaymentIntent su Stripe
             if (paymentIntent.status === 'succeeded') {
+
+                // Usa una transazione per aggiornare l'ordine
                 const sqlUpdateOrderStatus = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
 
                 db.query(sqlUpdateOrderStatus, [order_id], (err) => {
