@@ -47,17 +47,17 @@ function sendConfirmationEmail(customerEmail) {
 // Funzione per iniziare il processo di pagamento e generare un PaymentIntent con Stripe
 export function processPayment(req, res) {
 
-    const { order_id, customer_id } = req.body;
+    const { order_id } = req.body;
 
-    // Verifica che order_id e customer_id siano stati forniti
-    if (!order_id || !customer_id) {
-        return res.status(400).json({ message: 'Ordine e cliente devono essere specificati.' });
+    // Verifica che order_id siano stati forniti
+    if (!order_id) {
+        return res.status(400).json({ message: ' L ordine deve essere specificato.' });
     }
 
     // Recupera il totale dell'ordine dal database
-    const sqlGetOrder = 'SELECT total FROM orders WHERE id = ? AND customer_id = ?';
+    const sqlGetOrder = 'SELECT total FROM orders WHERE id = ? ';
 
-    db.query(sqlGetOrder, [order_id, customer_id], (err, result) => {
+    db.query(sqlGetOrder, [order_id], (err, result) => {
         if (err) {
             console.error("Errore nel recupero dell'ordine:", err);
             return res.status(500).json({ message: "Errore nel recupero dell'ordine." });

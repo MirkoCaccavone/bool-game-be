@@ -29,10 +29,10 @@ POST: http://localhost:3000/api/orders/create
 body-raw
 
 {
-  "customer_id": 1,
+  
   "total": 100,
   "shipping_cost": 8,
-  "status": "Spedito"
+  "status": "In elaborazione"
 }
 
 <!-- aggiunta di un prodotto al carrello -->
@@ -41,8 +41,8 @@ POST: http://localhost:3000/api/cart/add
 body-raw
 
 {
-  "customer_id": 1,
-  "product_id": 3, 
+  "order_id": 2,
+  "product_id": 2, 
   "quantity": 3
 }
 
@@ -52,9 +52,9 @@ PUT: http://localhost:3000/api/cart/update
 body-raw
 
 {
-  "customer_id": 1,
-  "product_id": 3,
-  "quantity": 1
+  "order_id": 2, 
+  "product_id": 2,
+  "quantity": 5
 }
 
 <!-- possibilità di rimuovere un prodotto dal carrello -->
@@ -63,7 +63,7 @@ DELETE: http://localhost:3000/api/cart/remove
 body-raw
 
 {
-  "customer_id": 1,
+  "order_id":2,
   "product_id": 3
 }
 
@@ -74,7 +74,6 @@ body-raw
 
 {
   "order_id": 5,
-  "customer_id": 4
 }
 
 <!-- verifica dell'effettuato pagamento (la rotta funzionerà una volta implementato il FE) -->
