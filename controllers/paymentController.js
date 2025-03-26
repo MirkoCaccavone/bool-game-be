@@ -90,48 +90,64 @@ export function processPayment(req, res) {
 
 // Funzione per verificare il pagamento e aggiornare lo stato dell'ordine
 export function verifyPayment(req, res) {
-    const { paymentIntentId, order_id, customerEmail } = req.body;
 
-    // Creazione di un PaymentIntent su Stripe
-    if (!paymentIntentId || !order_id || !customerEmail) {
-        return res.status(400).json({ message: 'PaymentIntent ID, Order ID e email cliente sono necessari.' });
+    const { paymentIntentId } = req.body;
+
+    // Controllo che il paymentIntentId sia stato fornito
+    if (!paymentIntentId) {
+        return res.status(400).json({ message: "L'ID del pagamento è necessario." });
     }
 
-    console.log('Dati ricevuti:', { paymentIntentId, order_id, customerEmail });
-
-    // Creazione di un PaymentIntent su Stripe
+    // Recupero i dettagli del pagamento da Stripe
     stripe.paymentIntents.retrieve(paymentIntentId)
         .then((paymentIntent) => {
-            console.log('PaymentIntent recuperato:', paymentIntent);
+            if (paymentIntent.status !== 'succeeded') {
+                return res.status(400).json({ message: "Il pagamento non è andato a buon fine." });
+            }
 
-            // Creazione di un PaymentIntent su Stripe
-            if (paymentIntent.status === 'succeeded') {
+            // Recupero l'ID dell'ordine dai metadati
+            const orderId = paymentIntent.metadata.order_id;
 
-                // Usa una transazione per aggiornare l'ordine
-                const sqlUpdateOrderStatus = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
+            if (!orderId) {
+                return res.status(400).json({ message: "Ordine non trovato nei metadati del pagamento." });
+            }
 
-                db.query(sqlUpdateOrderStatus, [order_id], (err) => {
+            // Aggiorno lo stato dell'ordine a "Pagato"
+            const sqlUpdateOrder = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
+
+            db.query(sqlUpdateOrder, [orderId], (err) => {
+                if (err) {
+                    console.error("Errore nell'aggiornamento dello stato dell'ordine:", err);
+                    return res.status(500).json({ message: "Errore nell'aggiornamento dell'ordine." });
+                }
+
+                // Recupero l'email del cliente per inviare la conferma
+                const sqlGetEmail = `
+                    SELECT o.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
+                    FROM orders o
+                    INNER JOIN order_items oi ON o.id = oi.order_id
+                    INNER JOIN products p ON oi.product_id = p.id
+                    WHERE o.id = ?`;
+
+                db.query(sqlGetEmail, [orderId], (err, orderDetails) => {
                     if (err) {
-                        console.error("Errore nell'aggiornamento dello stato dell'ordine:", err);
-                        return res.status(500).json({ message: "Errore nell'aggiornamento dello stato dell'ordine." });
+                        console.error("Errore nel recupero dei dettagli dell'ordine:", err);
+                        return res.status(500).json({ message: "Errore nel recupero dei dettagli dell'ordine." });
                     }
 
-                    // Creazione di un PaymentIntent su Stripe
-                    sendConfirmationEmail(customerEmail);
-                    res.json({ message: 'Pagamento completato con successo e stato dell\'ordine aggiornato.' });
+                    if (orderDetails.length === 0) {
+                        return res.status(404).json({ message: "Dettagli dell'ordine non trovati." });
+                    }
+
+                    // Simulo un'email di conferma 
+                    console.log("Email di conferma inviata per l'ordine:", orderId);
+
+                    res.json({ message: "Pagamento verificato e ordine aggiornato." });
                 });
-            } else if (paymentIntent.status === 'requires_payment_method') {
-                // Creazione di un PaymentIntent su Stripe
-                console.log('Pagamento non completato. Il PaymentIntent richiede un metodo di pagamento valido.');
-                res.status(400).json({ message: 'Pagamento non completato. Si prega di fornire un metodo di pagamento valido.' });
-            } else {
-                // Creazione di un PaymentIntent su Stripe
-                console.log('Stato PaymentIntent sconosciuto:', paymentIntent.status);
-                res.status(400).json({ message: 'Pagamento non completato.' });
-            }
+            });
         })
         .catch((err) => {
-            console.error('Errore nel recupero del PaymentIntent:', err);
-            return res.status(500).json({ message: 'Errore nel recupero del PaymentIntent.' });
+            console.error("Errore nella verifica del pagamento:", err);
+            return res.status(500).json({ message: "Errore nella verifica del pagamento." });
         });
 }
