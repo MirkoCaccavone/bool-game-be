@@ -85,7 +85,7 @@ body-raw
 {
   "paymentIntentId": "qui andrà inserita la chiave che restituisce /payment/process",
   "order_id": 5,
-  "customerEmail": "sceglieremo una mail per l'acquirente",
+  "customerEmail": "sceglieremo una mail per l'acquirente"
 }
 
 <!-- ricerca tutti i prodotti -->
