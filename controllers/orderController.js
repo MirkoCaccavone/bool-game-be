@@ -64,3 +64,30 @@ export function cancelOrder(req, res) {
         });
     });
 }
+
+// Funzione per confermare un ordine
+export function confirmOrder(req, res) {
+
+    // Estraggo l'ID dell'ordine dal corpo della richiesta
+    const { order_id } = req.body;
+
+    // Verifica se l'ID dell'ordine è stato fornito
+    if (!order_id) {
+        return res.status(400).json({ message: 'L\'ID dell\'ordine è necessario.' });
+    }
+
+    // Query SQL per aggiornare lo stato dell'ordine a "Confermato"
+    const sqlConfirmOrder = 'UPDATE orders SET status = "Confermato" WHERE id = ?';
+
+    // Esegue la query per aggiornare lo stato dell'ordine nel database
+    db.query(sqlConfirmOrder, [order_id], (err) => {
+
+        // Se si verifica un errore durante l'esecuzione della query
+        if (err) {
+            console.error('Errore nella conferma dell\'ordine:', err);
+            return res.status(500).json({ message: 'Errore nella conferma dell\'ordine.' });
+        }
+        // Se l'operazione è riuscita
+        res.json({ message: 'Ordine confermato con successo.' });
+    });
+}

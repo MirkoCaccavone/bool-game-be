@@ -22,7 +22,7 @@ export function addToCart(req, res) {
             return res.status(400).json({ message: "Stock insufficiente." });
         }
 
-        // Verifico se esiste un ordine "In elaborazione"
+        // ! Verifico se esiste un ordine "In elaborazione"
         const sqlOrder = 'SELECT * FROM orders WHERE status = "In elaborazione"';
 
         db.query(sqlOrder, (err, orderResult) => {
@@ -35,7 +35,7 @@ export function addToCart(req, res) {
                 orderId = orderResult[0].id;
                 insertOrderItem(orderId, product, quantity, res);
             } else {
-                // Se non esiste, creiamo un nuovo ordine
+                // ! Se non esiste, creiamo un nuovo ordine
                 const sqlNewOrder = 'INSERT INTO orders (total, shipping_cost, status) VALUES (?, ?, "In elaborazione")';
 
                 db.query(sqlNewOrder, [0, 5.00], (err, newOrder) => {
