@@ -23,3 +23,44 @@ export function createOrder(req, res) {
         res.json({ message: "Ordine creato con successo", orderId: result.insertId });
     });
 }
+
+// Funzione per annullare un ordine
+export function cancelOrder(req, res) {
+    const { order_id } = req.body;
+
+    if (!order_id) {
+        return res.status(400).json({ message: 'L\'ID dell\'ordine è necessario.' });
+    }
+
+    // Recupera i dettagli degli articoli dell'ordine
+    const sqlGetOrderItems = 'SELECT product_id, quantity FROM order_items WHERE order_id = ?';
+
+    db.query(sqlGetOrderItems, [order_id], (err, items) => {
+        if (err) {
+            console.error('Errore nel recupero degli articoli dell\'ordine:', err);
+            return res.status(500).json({ message: 'Errore nel recupero degli articoli dell\'ordine.' });
+        }
+
+        // Restituisce lo stock per ogni prodotto
+        const sqlUpdateStock = 'UPDATE products SET stock = stock + ? WHERE id = ?';
+
+        items.forEach(item => {
+            db.query(sqlUpdateStock, [item.quantity, item.product_id], (err) => {
+                if (err) {
+                    console.error('Errore nell\'aggiornamento dello stock:', err);
+                    return res.status(500).json({ message: 'Errore nell\'aggiornamento dello stock.' });
+                }
+            });
+        });
+
+        // Annulla l'ordine nel database
+        const sqlCancelOrder = 'UPDATE orders SET status = "Annullato" WHERE id = ?';
+        db.query(sqlCancelOrder, [order_id], (err) => {
+            if (err) {
+                console.error('Errore nell\'annullare l\'ordine:', err);
+                return res.status(500).json({ message: 'Errore nell\'annullare l\'ordine.' });
+            }
+            res.json({ message: 'Ordine annullato e stock aggiornato.' });
+        });
+    });
+}
