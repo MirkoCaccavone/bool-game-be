@@ -29,7 +29,7 @@ app.use((req, res, next) => {
 });
 
 // Importo le rotte
-import cartRoutes from './routes/cartRoutes.js';
+// import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js'
@@ -43,7 +43,7 @@ import errorHandler from './middleware/errorHandler.js';
 app.use(express.static('public'));
 
 // Rotte per il carrello
-app.use('/api/cart', cartRoutes);
+// app.use('/api/cart', cartRoutes);
 
 // registro  il middleware del path delle img
 app.use(imagePathMiddleware);

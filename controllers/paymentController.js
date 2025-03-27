@@ -16,7 +16,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-
 
 // Funzione per inviare una mail di conferma al cliente
 function sendConfirmationEmail(customerEmail) {
-
     // Configurazione del servizio di invio email
     const transporter = nodemailer.createTransport({
         service: 'gmail',
@@ -34,7 +33,7 @@ function sendConfirmationEmail(customerEmail) {
         text: 'Il tuo pagamento è stato completato con successo e l\'ordine è stato aggiornato.',
     };
 
-    // Contenuto dell'email
+    // Invio dell'email
     transporter.sendMail(mailOptions, (err, info) => {
         if (err) {
             console.error('Errore nell\'invio della mail:', err);
@@ -46,16 +45,15 @@ function sendConfirmationEmail(customerEmail) {
 
 // Funzione per iniziare il processo di pagamento e generare un PaymentIntent con Stripe
 export function processPayment(req, res) {
-
     const { order_id } = req.body;
 
     // Verifica che order_id siano stati forniti
     if (!order_id) {
-        return res.status(400).json({ message: ' L ordine deve essere specificato.' });
+        return res.status(400).json({ message: 'L\'ordine deve essere specificato.' });
     }
 
     // Recupera il totale dell'ordine dal database
-    const sqlGetOrder = 'SELECT total FROM orders WHERE id = ? ';
+    const sqlGetOrder = 'SELECT total FROM orders WHERE id = ?';
 
     db.query(sqlGetOrder, [order_id], (err, result) => {
         if (err) {
@@ -65,7 +63,7 @@ export function processPayment(req, res) {
 
         // Se l'ordine non esiste, restituisce un errore
         if (result.length === 0) {
-            return res.status(404).json({ message: "Ordine non trovato per il cliente." });
+            return res.status(404).json({ message: "Ordine non trovato." });
         }
 
         // Stripe lavora con importi in centesimi, moltiplica per 100
@@ -78,7 +76,7 @@ export function processPayment(req, res) {
             metadata: { order_id },
         })
             .then((paymentIntent) => {
-                // Creazione di un PaymentIntent su Stripe
+                // Restituisce il clientSecret per completare il pagamento
                 res.json({ clientSecret: paymentIntent.client_secret });
             })
             .catch((err) => {
@@ -90,7 +88,6 @@ export function processPayment(req, res) {
 
 // Funzione per verificare il pagamento e aggiornare lo stato dell'ordine
 export function verifyPayment(req, res) {
-
     const { paymentIntentId } = req.body;
 
     // Controllo che il paymentIntentId sia stato fornito
@@ -112,37 +109,58 @@ export function verifyPayment(req, res) {
                 return res.status(400).json({ message: "Ordine non trovato nei metadati del pagamento." });
             }
 
-            // Aggiorno lo stato dell'ordine a "Pagato"
-            const sqlUpdateOrder = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
-
-            db.query(sqlUpdateOrder, [orderId], (err) => {
+            // Inizio della transazione per l'aggiornamento dell'ordine
+            db.beginTransaction((err) => {
                 if (err) {
-                    console.error("Errore nell'aggiornamento dello stato dell'ordine:", err);
-                    return res.status(500).json({ message: "Errore nell'aggiornamento dell'ordine." });
+                    console.error('Errore nell\'iniziare la transazione:', err);
+                    return res.status(500).json({ message: 'Errore nell\'iniziare la transazione.' });
                 }
 
-                // Recupero l'email del cliente per inviare la conferma
-                const sqlGetEmail = `
-                    SELECT o.id, oi.order_id, oi.product_id, oi.quantity, p.name AS product_name
-                    FROM orders o
-                    INNER JOIN order_items oi ON o.id = oi.order_id
-                    INNER JOIN products p ON oi.product_id = p.id
-                    WHERE o.id = ?`;
-
-                db.query(sqlGetEmail, [orderId], (err, orderDetails) => {
+                // Aggiornamento dello stato dell'ordine a "Pagato"
+                const sqlUpdateOrder = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
+                db.query(sqlUpdateOrder, [orderId], (err) => {
                     if (err) {
-                        console.error("Errore nel recupero dei dettagli dell'ordine:", err);
-                        return res.status(500).json({ message: "Errore nel recupero dei dettagli dell'ordine." });
+                        return db.rollback(() => {
+                            console.error("Errore nell'aggiornamento dell'ordine:", err);
+                            return res.status(500).json({ message: "Errore nell'aggiornamento dell'ordine." });
+                        });
                     }
 
-                    if (orderDetails.length === 0) {
-                        return res.status(404).json({ message: "Dettagli dell'ordine non trovati." });
-                    }
+                    // Recupera i dettagli dell'ordine, inclusa l'email del cliente
+                    const sqlGetEmail = `
+                        SELECT o.id, o.customer_email
+                        FROM orders o
+                        WHERE o.id = ?`;
 
-                    // Simulo un'email di conferma 
-                    console.log("Email di conferma inviata per l'ordine:", orderId);
+                    db.query(sqlGetEmail, [orderId], (err, orderDetails) => {
+                        if (err) {
+                            return db.rollback(() => {
+                                console.error("Errore nel recupero dei dettagli dell'ordine:", err);
+                                return res.status(500).json({ message: "Errore nel recupero dei dettagli dell'ordine." });
+                            });
+                        }
 
-                    res.json({ message: "Pagamento verificato e ordine aggiornato." });
+                        if (orderDetails.length === 0) {
+                            return db.rollback(() => {
+                                return res.status(404).json({ message: "Dettagli dell'ordine non trovati." });
+                            });
+                        }
+
+                        // Invio dell'email di conferma
+                        sendConfirmationEmail(orderDetails[0].customer_email);
+
+                        // Completamento della transazione
+                        db.commit((err) => {
+                            if (err) {
+                                return db.rollback(() => {
+                                    console.error('Errore nel commettere la transazione:', err);
+                                    return res.status(500).json({ message: 'Errore nella conferma del pagamento.' });
+                                });
+                            }
+
+                            res.json({ message: "Pagamento verificato e ordine aggiornato." });
+                        });
+                    });
                 });
             });
         })
