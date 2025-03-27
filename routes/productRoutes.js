@@ -10,5 +10,4 @@ router.route("/").get(index);
 // show visualizza un singolo elemento
 router.route("/:id").get(show);
 
-
 export default router;
