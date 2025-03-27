@@ -9,21 +9,33 @@ function isAbsoluteUrl(url) {
 // Funzione INDEX per ottenere tutti i prodotti
 export function index(req, res) {
     const sql = `
-        SELECT p.*, c.category_name, 
-               COALESCE(pi.image_url, p.image_url) AS final_image
+        SELECT
+            p.*,
+            c.category_name,
+            g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
+            a.compatibility, a.brand,
+            con.color, con.hardware_specs, con.bundle_included,
+            COALESCE(pi.image_url, p.image_url) AS final_image,
+            pi.image_url AS pi_image_url -- Campo per distinguere se l'immagine proviene da products_image
         FROM products p
         JOIN categories c ON p.id = c.product_id
-        LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE
+        LEFT JOIN games g ON p.id = g.product_id
+        LEFT JOIN accessories a ON p.id = a.product_id
+        LEFT JOIN consoles con ON p.id = con.product_id
+        LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE;
     `;
 
     db.query(sql, (err, results) => {
         if (err) return res.status(500).json({ error: 'Database query failed' });
 
         const products = results.map(product => {
-            product.image_url = product.final_image
-                ? (isAbsoluteUrl(product.final_image) ? product.final_image : `${req.imagePath}${product.final_image}`)
-                : null;
-            delete product.final_image;
+            // Se l'immagine proviene da products_image, aggiungi il path assoluto
+            product.image_url = product.pi_image_url
+                ? `${req.imagePath}${product.final_image}`
+                : product.final_image; // Altrimenti usa direttamente l'immagine di products
+
+            delete product.final_image; // Rimuovi il campo di supporto
+            delete product.pi_image_url; // Rimuovi il campo di supporto
             return product;
         });
 
