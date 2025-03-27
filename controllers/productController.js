@@ -9,11 +9,20 @@ function isAbsoluteUrl(url) {
 // Funzione INDEX per ottenere tutti i prodotti
 export function index(req, res) {
     const sql = `
-        SELECT p.*, c.category_name, 
-               COALESCE(pi.image_url, p.image_url) AS final_image
-        FROM products p
-        JOIN categories c ON p.id = c.product_id
-        LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE
+        SELECT
+    p.*,
+    c.*,
+    g.*,
+    a.*,
+    con.*,
+    pi.image_url AS cover_image
+FROM products p
+JOIN categories c ON p.id = c.product_id
+LEFT JOIN games g ON p.id = g.product_id
+LEFT JOIN accessories a ON p.id = a.product_id
+LEFT JOIN consoles con ON p.id = con.product_id
+LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE;
+
     `;
 
     db.query(sql, (err, results) => {
