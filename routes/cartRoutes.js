@@ -1,15 +1,15 @@
-import express from 'express';
-import { addToCart, removeFromCart, updateQuantity } from '../controllers/cartController.js';
+// import express from 'express';
+// import { addToCart, removeFromCart, updateQuantity } from '../controllers/cartController.js';
 
-const router = express.Router();
+// const router = express.Router();
 
-// Aggiungi un prodotto al carrello
-router.post('/add', addToCart);
+// // Aggiungi un prodotto al carrello
+// router.post('/add', addToCart);
 
-// Modifica la quantità di un prodotto nel carrello
-router.put('/update', updateQuantity);
+// // Modifica la quantità di un prodotto nel carrello
+// router.put('/update', updateQuantity);
 
-// Rimuovere un prodotto dal carrello
-router.delete('/remove', removeFromCart);
+// // Rimuovere un prodotto dal carrello
+// router.delete('/remove', removeFromCart);
 
-export default router;
+// export default router;
