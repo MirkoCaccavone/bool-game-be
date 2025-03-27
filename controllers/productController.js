@@ -11,11 +11,11 @@ export function index(req, res) {
     const sql = `
         SELECT
     p.*,
-    c.*,
-    g.*,
-    a.*,
-    con.*,
-    pi.image_url AS cover_image
+    c.category_name,
+    g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
+     a.compatibility, a.brand,
+    con.color, con.hardware_specs, con.bundle_included,
+    pi.image_url , pi.isCover AS final_image
 FROM products p
 JOIN categories c ON p.id = c.product_id
 LEFT JOIN games g ON p.id = g.product_id
