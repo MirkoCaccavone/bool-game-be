@@ -3,7 +3,7 @@ import db from '../config/db.js'; // Connessione al database
 
 const router = express.Router();
 
-// Endpoint per aggiornare lo stock di un prodotto
+// Aggiorna lo stock quando un prodotto viene aggiunto/rimosso al carrello
 router.post('/update-stock', (req, res) => {
     const { productId, newQuantity, currentQuantity } = req.body;
 
@@ -16,7 +16,7 @@ router.post('/update-stock', (req, res) => {
             return res.status(500).json({ message: 'Errore durante il recupero del prodotto' });
         }
 
-        // Se il prodotto non esiste, restituisce un errore
+        // Se il prodotto non esiste
         if (results.length === 0) {
             return res.status(404).json({ message: 'Prodotto non trovato' });
         }
@@ -26,15 +26,30 @@ router.post('/update-stock', (req, res) => {
 
         console.log(`🟡 Stock attuale: ${stockDisponibile}, differenza calcolata: ${differenza}`);
 
-        // Se la differenza è positiva, significa che il cliente sta aggiungendo più unità al carrello
-        // Quindi lo stock disponibile deve diminuire
-        if (differenza > 0) {
+        // 🟢 Se l'utente aggiunge il prodotto per la prima volta al carrello (newQuantity == 1 e currentQuantity == 0)
+        if (currentQuantity === 0 && newQuantity === 1) {
+            if (stockDisponibile <= 0) {
+                console.log('🔴 Stock insufficiente!');
+                return res.status(400).json({ message: 'Stock insufficiente' });
+            }
+
+            db.query('UPDATE products SET stock = stock - 1 WHERE id = ?', [productId], (updateErr) => {
+                if (updateErr) {
+                    console.error(updateErr);
+                    return res.status(500).json({ message: 'Errore nell\'aggiornamento dello stock' });
+                }
+                console.log(`✅ Stock ridotto di 1 (aggiunto al carrello)`);
+                return res.status(200).json({ message: 'Prodotto aggiunto al carrello, stock aggiornato' });
+            });
+
+        }
+        // 🟡 Se l'utente aumenta la quantità nel carrello
+        else if (differenza > 0) {
             if (stockDisponibile < differenza) {
                 console.log('🔴 Stock insufficiente!');
                 return res.status(400).json({ message: 'Stock insufficiente' });
             }
 
-            // Aggiorna lo stock riducendo la quantità richiesta
             db.query('UPDATE products SET stock = stock - ? WHERE id = ?', [differenza, productId], (updateErr) => {
                 if (updateErr) {
                     console.error(updateErr);
@@ -44,9 +59,9 @@ router.post('/update-stock', (req, res) => {
                 return res.status(200).json({ message: 'Stock aggiornato con successo' });
             });
 
-            // Se la differenza è negativa, il cliente sta rimuovendo unità dal carrello → lo stock deve aumentare
-        } else if (differenza < 0) {
-
+        }
+        // 🔵 Se l'utente diminuisce la quantità nel carrello
+        else if (differenza < 0) {
             db.query('UPDATE products SET stock = stock + ? WHERE id = ?', [-differenza, productId], (updateErr) => {
                 if (updateErr) {
                     console.error(updateErr);
@@ -55,8 +70,9 @@ router.post('/update-stock', (req, res) => {
                 console.log(`✅ Stock aumentato di ${-differenza}`);
                 return res.status(200).json({ message: 'Stock aggiornato con successo' });
             });
-            // Se la differenza è zero, la quantità nel carrello non è cambiata, quindi non è necessario aggiornare lo stock
-        } else {
+        }
+        // ℹ️ Se non ci sono modifiche nella quantità
+        else {
             console.log('ℹ️ Nessuna modifica necessaria');
             return res.status(200).json({ message: 'Nessuna modifica necessaria' });
         }
