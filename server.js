@@ -29,10 +29,10 @@ app.use((req, res, next) => {
 });
 
 // Importo le rotte
-// import cartRoutes from './routes/cartRoutes.js';
-import orderRoutes from './routes/orderRoutes.js';
 import productRoutes from './routes/productRoutes.js';
-import paymentRoutes from './routes/paymentRoutes.js'
+import stockRoutes from './routes/stockRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import paymentRoutes from './routes/paymentRoutes.js';
 
 // importo i middleware
 import imagePathMiddleware from './middleware/imagePath.js';
@@ -42,8 +42,8 @@ import errorHandler from './middleware/errorHandler.js';
 // Serve i file statici dalla cartella 'public'
 app.use(express.static('public'));
 
-// Rotte per il carrello
-// app.use('/api/cart', cartRoutes);
+// Rotte per lo stock
+app.use('/api', stockRoutes);
 
 // registro  il middleware del path delle img
 app.use(imagePathMiddleware);
