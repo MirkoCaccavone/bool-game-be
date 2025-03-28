@@ -1,5 +1,39 @@
 import db from '../config/db.js';
 
+// Funzione per recuperare i dettagli di un ordine
+export function getOrderDetails(req, res) {
+    const { orderId } = req.params; // Prendi l'ID dell'ordine dai parametri della richiesta
+
+    // Recupera i dettagli dell'ordine
+    const sqlGetOrder = 'SELECT * FROM orders WHERE id = ?';
+    db.query(sqlGetOrder, [orderId], (err, orderResult) => {
+        if (err) {
+            console.error('Errore nel recupero dell\'ordine:', err);
+            return res.status(500).json({ message: 'Errore nel recupero dell\'ordine', error: err.message });
+        }
+
+        if (orderResult.length === 0) {
+            return res.status(404).json({ message: 'Ordine non trovato' });
+        }
+
+        // Recupera gli articoli associati a questo ordine
+        const sqlGetOrderItems = 'SELECT oi.*, p.name AS product_name, p.price FROM order_items oi JOIN products p ON oi.product_id = p.id WHERE oi.order_id = ?';
+        db.query(sqlGetOrderItems, [orderId], (err, itemsResult) => {
+            if (err) {
+                console.error('Errore nel recupero degli articoli dell\'ordine:', err);
+                return res.status(500).json({ message: 'Errore nel recupero degli articoli dell\'ordine', error: err.message });
+            }
+
+            // Rispondi con i dettagli dell'ordine e degli articoli
+            res.json({
+                order: orderResult[0], // Dettagli dell'ordine
+                items: itemsResult // Articoli dell'ordine
+            });
+        });
+    });
+}
+
+
 // Funzione per creare un nuovo ordine
 export function createOrder(req, res) {
     const { total, shipping_cost, status, products } = req.body; // Aggiungi `products` per gli articoli dell'ordine
@@ -145,3 +179,4 @@ export function confirmOrder(req, res) {
         });
     });
 }
+
