@@ -1,7 +1,7 @@
 // Creo un'istanza del router di Express
 import express from 'express';
 // Creo un'istanza del router di Express
-import { processPayment, verifyPayment } from '../controllers/paymentController.js';
+import { processPayment, verifyPayment } from '../controllers/paymentController.js'
 
 // Creo un'istanza del router di Express
 const router = express.Router();

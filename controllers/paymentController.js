@@ -45,45 +45,29 @@ function sendConfirmationEmail(customerEmail) {
 
 // Funzione per iniziare il processo di pagamento e generare un PaymentIntent con Stripe
 export function processPayment(req, res) {
-    const { order_id } = req.body;
+    const { cartItems } = req.body;
 
-    // Verifica che order_id siano stati forniti
-    if (!order_id) {
-        return res.status(400).json({ message: 'L\'ordine deve essere specificato.' });
+    if (!cartItems || cartItems.length === 0) {
+        return res.status(400).json({ message: 'Il carrello è vuoto.' });
     }
 
-    // Recupera il totale dell'ordine dal database
-    const sqlGetOrder = 'SELECT total FROM orders WHERE id = ?';
+    const totalAmount = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    const shippingCost = 10; // o calcolalo in base alla logica della tua app
+    const total = totalAmount + shippingCost;
 
-    db.query(sqlGetOrder, [order_id], (err, result) => {
-        if (err) {
-            console.error("Errore nel recupero dell'ordine:", err);
-            return res.status(500).json({ message: "Errore nel recupero dell'ordine." });
-        }
-
-        // Se l'ordine non esiste, restituisce un errore
-        if (result.length === 0) {
-            return res.status(404).json({ message: "Ordine non trovato." });
-        }
-
-        // Stripe lavora con importi in centesimi, moltiplica per 100
-        const totalAmount = result[0].total * 100;
-
-        // Creazione di un PaymentIntent su Stripe
-        stripe.paymentIntents.create({
-            amount: totalAmount,
-            currency: 'eur',
-            metadata: { order_id },
+    // Creazione di un PaymentIntent su Stripe
+    stripe.paymentIntents.create({
+        amount: total * 100, // Stripe lavora con centesimi
+        currency: 'eur',
+        metadata: { cartItems },
+    })
+        .then((paymentIntent) => {
+            res.json({ clientSecret: paymentIntent.client_secret });
         })
-            .then((paymentIntent) => {
-                // Restituisce il clientSecret per completare il pagamento
-                res.json({ clientSecret: paymentIntent.client_secret });
-            })
-            .catch((err) => {
-                console.error('Errore nella creazione del PaymentIntent:', err);
-                return res.status(500).json({ message: 'Errore nella creazione del pagamento.' });
-            });
-    });
+        .catch((err) => {
+            console.error('Errore nella creazione del PaymentIntent:', err);
+            return res.status(500).json({ message: 'Errore nella creazione del pagamento.' });
+        });
 }
 
 // Funzione per verificare il pagamento e aggiornare lo stato dell'ordine

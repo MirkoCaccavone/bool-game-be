@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 // Carico le variabili d'ambiente (configuro la chiave segreta di Stripe e altre impostazioni)
 dotenv.config();
 
+import bodyParser from 'body-parser';
+
 // Importo Express per gestire il server
 import express from 'express';
 
@@ -17,7 +19,7 @@ const app = express();
 const port = process.env.PORT;
 
 // Middleware per il parsing del corpo della richiesta
-app.use(express.json());
+app.use(bodyParser.json());
 
 // Abilito il CORS per il frontend
 app.use(cors({ origin: process.env.FE_APP }));
@@ -31,7 +33,6 @@ app.use((req, res, next) => {
 // Importo le rotte
 import productRoutes from './routes/productRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
-import orderRoutes from './routes/orderRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
 
 // importo i middleware
@@ -43,13 +44,10 @@ import errorHandler from './middleware/errorHandler.js';
 app.use(express.static('public'));
 
 // Rotte per lo stock
-app.use('/api', stockRoutes);
+app.use('/api/stock', stockRoutes);
 
 // registro  il middleware del path delle img
 app.use(imagePathMiddleware);
-
-// Rotte per gli ordini
-app.use('/api/orders', orderRoutes);
 
 // Rotte per i prodotti
 app.use('/api/products', productRoutes);
