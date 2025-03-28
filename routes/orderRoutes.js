@@ -1,5 +1,5 @@
 import express from 'express';
-import { createOrder } from '../controllers/orderController.js';
+import { createOrder, getOrderDetails } from '../controllers/orderController.js';
 
 const router = express.Router();
 
@@ -15,5 +15,8 @@ const validateOrderData = (req, res, next) => {
 
 // Conferma e creazione dell'ordine
 router.post('/create', validateOrderData, createOrder);
+
+// Rotta per ottenere i dettagli dell'ordine 
+router.get('/:orderId', getOrderDetails);
 
 export default router;
