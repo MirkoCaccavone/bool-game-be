@@ -1,62 +1,59 @@
 import db from '../config/db.js';
 
-// Funzione per aggiornare lo stock del prodotto
-function aggiornaStock(req, res) {
-  const { productId, newQuantity, currentQuantity } = req.body;
+// Funzione per aggiornare lo stock dinamicamente
+export function adjustStock(req, res) {
+  // Estrazione dei parametri productId e quantityChange dal corpo della richiesta
+  const { productId, quantityChange } = req.body;
 
-  // Recupera i dettagli del prodotto dal database
-  db.query('SELECT * FROM products WHERE id = ?', [productId], (err, results) => {
+  // Log dei parametri ricevuti con icona per tenere traccia dell'azione
+  console.log(`🛒 Richiesta di aggiornamento stock: prodotto ID ${productId}, cambiamento quantità: ${quantityChange}`);
+
+  // Verifica che i dati necessari siano presenti
+  if (!productId || quantityChange === undefined) {
+    console.log('❌ Errore: Dati mancanti');
+    return res.status(400).json({ message: 'Dati mancanti' });
+  }
+
+  // Query per recuperare l'attuale stock del prodotto con l'ID specificato
+  db.query('SELECT stock FROM products WHERE id = ?', [productId], (err, results) => {
+    // Gestione errori nella query
     if (err) {
-      console.error(err);
-      return res.status(500).json({ message: 'Errore nel recupero del prodotto' });
+      console.error('⚠️ Errore nel recupero dello stock:', err);
+      return res.status(500).json({ message: 'Errore del server' });
     }
 
-    // Se il prodotto non esiste, restituisce un errore
+    // Verifica che il prodotto esista nel database
     if (results.length === 0) {
+      console.log(`❌ Prodotto non trovato: ID ${productId}`);
       return res.status(404).json({ message: 'Prodotto non trovato' });
     }
 
-    const prodotto = results[0];
+    // Estrazione dello stock attuale del prodotto
+    const currentStock = results[0].stock;
+    console.log(`📦 Stock attuale del prodotto ID ${productId}: ${currentStock}`);
 
-    // Controlla che la nuova quantità non sia negativa
-    if (newQuantity < 0) {
-      return res.status(400).json({ message: 'La quantità non può essere negativa' });
+    // Calcolo del nuovo stock
+    const newStock = currentStock + quantityChange;
+    console.log(`🔄 Nuovo stock calcolato per il prodotto ID ${productId}: ${newStock}`);
+
+    // Verifica che lo stock non vada in negativo
+    if (newStock < 0) {
+      console.log(`❌ Errore: Stock insufficiente per il prodotto ID ${productId}`);
+      return res.status(400).json({ message: 'Stock insufficiente' });
     }
 
-    // Calcola la differenza tra la nuova quantità e la quantità attuale
-    const quantityDifference = newQuantity - currentQuantity;
-
-    // Se la quantità aumenta, verifica la disponibilità in stock e aggiorna
-    if (quantityDifference > 0) {
-      // Se la quantità aumenta, decrementa lo stock nel database
-      if (prodotto.stock < quantityDifference) {
-        return res.status(400).json({ message: 'Non ci sono abbastanza prodotti in stock per questa quantità' });
+    // Query per aggiornare lo stock nel database
+    db.query('UPDATE products SET stock = ? WHERE id = ?', [newStock, productId], (updateErr) => {
+      // Gestione errori nell'aggiornamento dello stock
+      if (updateErr) {
+        console.error('⚠️ Errore aggiornamento stock:', updateErr);
+        return res.status(500).json({ message: 'Errore del server' });
       }
 
-      // Aggiorna lo stock riducendo la quantità richiesta
-      db.query('UPDATE products SET stock = stock - ? WHERE id = ?', [quantityDifference, productId], (updateErr) => {
-        if (updateErr) {
-          console.error(updateErr);
-          return res.status(500).json({ message: 'Errore nell\'aggiornamento dello stock' });
-        }
-
-        return res.status(200).json({ message: 'Stock aggiornato con successo' });
-      });
-
-      // Se la quantità diminuisce, aumenta lo stock nel database
-    } else if (quantityDifference < 0) {
-
-      // Se la quantità diminuisce, incrementa lo stock nel database
-      db.query('UPDATE products SET stock = stock + ? WHERE id = ?', [-quantityDifference, productId], (updateErr) => {
-        if (updateErr) {
-          console.error(updateErr);
-          return res.status(500).json({ message: 'Errore nell\'aggiornamento dello stock' });
-        }
-
-        return res.status(200).json({ message: 'Stock aggiornato con successo' });
-      });
-    }
+      // Log per confermare l'aggiornamento dello stock con successo
+      console.log(`✅ Stock aggiornato con successo per il prodotto ID ${productId}: nuovo stock ${newStock}`);
+      // Risposta al client con il nuovo valore dello stock
+      res.json({ message: 'Stock aggiornato', newStock });
+    });
   });
 }
-
-export default aggiornaStock;
