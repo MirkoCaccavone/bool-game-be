@@ -15,6 +15,12 @@ import cors from 'cors';
 // Inizializzo l'app Express
 const app = express();
 
+// Middleware di logging
+app.use((req, res, next) => {
+    console.log(`Request made to: ${req.originalUrl}`);
+    next();
+});
+
 // Configuro la porta
 const port = process.env.PORT;
 
@@ -26,7 +32,6 @@ app.use(cors({ origin: process.env.FE_APP }));
 
 // Log delle richieste
 app.use((req, res, next) => {
-    console.log('Request body:', req.body);
     next();
 });
 
@@ -70,3 +75,4 @@ app.use(errorHandler);
 app.listen(port, () => {
     console.log(`Example app listening on port ${port}`);
 });
+
