@@ -1,155 +1,118 @@
-// Importo dotenv per caricare le variabili d'ambiente
-import dotenv from 'dotenv';
-dotenv.config();
-
-// Importo Stripe per gestire i pagamenti
 import Stripe from 'stripe';
-
-// Servizio per inviare mail
 import nodemailer from 'nodemailer';
 
-// Importo la configurazione del database
-import db from '../config/db.js';
+// Inizializza Stripe con la tua chiave segreta
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
-// Inizializzo Stripe con la chiave segreta dalle variabili d'ambiente
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: '2023-10-16' });
+// Funzione per inviare le email
+const sendConfirmationEmails = async (userDetails, cart) => {
 
-// Funzione per inviare una mail di conferma al cliente
-function sendConfirmationEmail(customerEmail) {
-    // Configurazione del servizio di invio email
+    // Configura il trasportatore Nodemailer
     const transporter = nodemailer.createTransport({
         service: 'gmail',
         auth: {
-            user: process.env.EMAIL_USER,
-            pass: process.env.EMAIL_PASS,
+            user: process.env.EMAIL_USER,  // Utente per l'autenticazione
+            pass: process.env.EMAIL_PASS,  // Password per l'autenticazione
         },
     });
 
-    // Contenuto dell'email
-    const mailOptions = {
+    // Email al venditore
+    const sellerEmailOptions = {
         from: process.env.EMAIL_USER,
-        to: customerEmail,
-        subject: 'Conferma pagamento',
-        text: 'Il tuo pagamento è stato completato con successo e l\'ordine è stato aggiornato.',
+        to: process.env.CUSTOMER_EMAIL,
+        subject: 'Nuovo Ordine Ricevuto',
+        text: `Nuovo ordine ricevuto da ${userDetails.firstName} ${userDetails.lastName}.
+        
+        Dettagli dell'utente:
+        Nome: ${userDetails.firstName} ${userDetails.lastName}
+        Indirizzo: ${userDetails.address}
+        Città: ${userDetails.city}
+        CAP: ${userDetails.postalCode}
+        Stato: ${userDetails.state}
+        Email: ${userDetails.email}
+        Codice Fiscale: ${userDetails.fiscalCode}
+
+        Dettagli dell'ordine:
+        ${cart.map(product => `${product.name} x ${product.quantity} - €${(product.price * product.quantity).toFixed(2)}`).join('\n')}
+
+        Totale: €${cart.reduce((total, product) => total + product.price * product.quantity, 0).toFixed(2)}`,
     };
 
-    // Invio dell'email
-    transporter.sendMail(mailOptions, (err, info) => {
-        if (err) {
-            console.error('Errore nell\'invio della mail:', err);
-        } else {
-            console.log('Email inviata: ' + info.response);
+    // Email al compratore (Finta fattura)
+    const buyerEmailOptions = {
+        from: process.env.EMAIL_USER,
+        to: userDetails.email,
+        subject: 'Fattura Ordine',
+        text: `Grazie per aver acquistato da noi, ${userDetails.firstName}!
+        Ecco la tua fattura:
+        ${cart.map(product => `${product.name} x ${product.quantity} - €${(product.price * product.quantity).toFixed(2)}`).join('\n')}
+        Totale: €${cart.reduce((total, product) => total + product.price * product.quantity, 0).toFixed(2)}`,
+    };
+
+    try {
+        // Invia le email
+        await transporter.sendMail(sellerEmailOptions);
+        await transporter.sendMail(buyerEmailOptions);
+        console.log('✅ Email inviate con successo');
+    } catch (error) {
+        console.error('❌ Errore nell\'invio delle email:', error);
+    }
+};
+
+// Funzione per creare la sessione di pagamento
+export const createCheckoutSession = async (req, res) => {
+
+    // Ottenere anche i dettagli dell'utente
+    const { cartItems, userDetails } = req.body;
+
+    // Log per verificare i cartItems ricevuti dalla richiesta
+    console.log('🛒 Cart Items:', cartItems);
+    // Ottenere anche i dettagli dell'utente
+    console.log('👤 User Details:', userDetails);
+
+    // Mappa gli articoli del carrello per creare i line_items per Stripe
+    const line_items = cartItems.map(item => {
+        // Verifica che il prezzo del prodotto sia valido
+        if (!item.price || isNaN(item.price) || item.price <= 0) {
+            return res.status(400).send('❌ Prezzo non valido per un prodotto.');
         }
+        return {
+            price_data: {
+                currency: 'eur',
+                product_data: {
+                    name: item.name,
+                    images: [item.image_url],
+                },
+                unit_amount: item.price * 100,
+            },
+            quantity: item.quantity,
+        };
     });
-}
 
-// Funzione per iniziare il processo di pagamento e generare un PaymentIntent con Stripe
-export function processPayment(req, res) {
-    const { cartItems } = req.body;
-
-    if (!cartItems || cartItems.length === 0) {
-        return res.status(400).json({ message: 'Il carrello è vuoto.' });
-    }
-
-    const totalAmount = cartItems.reduce((acc, item) => acc + item.price * item.quantity, 0);
-    const shippingCost = 10; // o calcolalo in base alla logica della tua app
-    const total = totalAmount + shippingCost;
-
-    // Creazione di un PaymentIntent su Stripe
-    stripe.paymentIntents.create({
-        amount: total * 100, // Stripe lavora con centesimi
-        currency: 'eur',
-        metadata: { cartItems },
-    })
-        .then((paymentIntent) => {
-            res.json({ clientSecret: paymentIntent.client_secret });
-        })
-        .catch((err) => {
-            console.error('Errore nella creazione del PaymentIntent:', err);
-            return res.status(500).json({ message: 'Errore nella creazione del pagamento.' });
+    try {
+        // Crea la sessione di checkout con Stripe
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            line_items,
+            mode: 'payment',
+            success_url: `${process.env.FE_APP}/home?session_id={CHECKOUT_SESSION_ID}`,
+            cancel_url: `${process.env.FE_APP}/checkout`,
         });
-}
 
-// Funzione per verificare il pagamento e aggiornare lo stato dell'ordine
-export function verifyPayment(req, res) {
-    const { paymentIntentId } = req.body;
+        // Log per la sessione di pagamento creata
+        console.log('💳 Session ID:', session.id);
 
-    // Controllo che il paymentIntentId sia stato fornito
-    if (!paymentIntentId) {
-        return res.status(400).json({ message: "L'ID del pagamento è necessario." });
+        // Invia le email di conferma al venditore e al compratore
+        await sendConfirmationEmails(userDetails, cartItems);
+
+        // Log per session ID
+        console.log('Session ID:', session.id);
+
+        // Risposta con l'ID della sessione Stripe
+        res.json({ sessionId: session.id, message: "✅ Pagamento simulato con successo" });
+    } catch (error) {
+        console.error('❌ Errore nel pagamento:', error);
+        res.status(500).json({ error: error.message });
     }
+};
 
-    // Recupero i dettagli del pagamento da Stripe
-    stripe.paymentIntents.retrieve(paymentIntentId)
-        .then((paymentIntent) => {
-            if (paymentIntent.status !== 'succeeded') {
-                return res.status(400).json({ message: "Il pagamento non è andato a buon fine." });
-            }
-
-            // Recupero l'ID dell'ordine dai metadati
-            const orderId = paymentIntent.metadata.order_id;
-
-            if (!orderId) {
-                return res.status(400).json({ message: "Ordine non trovato nei metadati del pagamento." });
-            }
-
-            // Inizio della transazione per l'aggiornamento dell'ordine
-            db.beginTransaction((err) => {
-                if (err) {
-                    console.error('Errore nell\'iniziare la transazione:', err);
-                    return res.status(500).json({ message: 'Errore nell\'iniziare la transazione.' });
-                }
-
-                // Aggiornamento dello stato dell'ordine a "Pagato"
-                const sqlUpdateOrder = 'UPDATE orders SET status = "Pagato" WHERE id = ?';
-                db.query(sqlUpdateOrder, [orderId], (err) => {
-                    if (err) {
-                        return db.rollback(() => {
-                            console.error("Errore nell'aggiornamento dell'ordine:", err);
-                            return res.status(500).json({ message: "Errore nell'aggiornamento dell'ordine." });
-                        });
-                    }
-
-                    // Recupera i dettagli dell'ordine, inclusa l'email del cliente
-                    const sqlGetEmail = `
-                        SELECT o.id, o.customer_email
-                        FROM orders o
-                        WHERE o.id = ?`;
-
-                    db.query(sqlGetEmail, [orderId], (err, orderDetails) => {
-                        if (err) {
-                            return db.rollback(() => {
-                                console.error("Errore nel recupero dei dettagli dell'ordine:", err);
-                                return res.status(500).json({ message: "Errore nel recupero dei dettagli dell'ordine." });
-                            });
-                        }
-
-                        if (orderDetails.length === 0) {
-                            return db.rollback(() => {
-                                return res.status(404).json({ message: "Dettagli dell'ordine non trovati." });
-                            });
-                        }
-
-                        // Invio dell'email di conferma
-                        sendConfirmationEmail(orderDetails[0].customer_email);
-
-                        // Completamento della transazione
-                        db.commit((err) => {
-                            if (err) {
-                                return db.rollback(() => {
-                                    console.error('Errore nel commettere la transazione:', err);
-                                    return res.status(500).json({ message: 'Errore nella conferma del pagamento.' });
-                                });
-                            }
-
-                            res.json({ message: "Pagamento verificato e ordine aggiornato." });
-                        });
-                    });
-                });
-            });
-        })
-        .catch((err) => {
-            console.error("Errore nella verifica del pagamento:", err);
-            return res.status(500).json({ message: "Errore nella verifica del pagamento." });
-        });
-}
