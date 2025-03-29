@@ -14,6 +14,9 @@ const sendConfirmationEmails = async (userDetails, cart) => {
             user: process.env.EMAIL_USER,  // Utente per l'autenticazione
             pass: process.env.EMAIL_PASS,  // Password per l'autenticazione
         },
+        tls: {
+            rejectUnauthorized: false, // Ignora la verifica del certificato TLS
+        },
     });
 
     // Email al venditore
