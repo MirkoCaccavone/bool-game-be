@@ -99,14 +99,24 @@ export function search(req, res) {
         return res.status(400).json({ error: 'Nome del prodotto o categoria non fornito' });
     }
 
+    // Query SQL aggiornata per includere più dati
     let sql = `
-        SELECT p.*, c.category_name, 
-               COALESCE(pi.image_url, p.image_url) AS final_image
+        SELECT
+            p.*,
+            c.category_name,
+            g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
+            a.compatibility, a.brand,
+            con.color, con.hardware_specs, con.bundle_included,
+            COALESCE(pi.image_url, p.image_url) AS final_image,
+            pi.image_url AS pi_image_url -- Campo per distinguere se l'immagine proviene da products_image
         FROM products p
-        LEFT JOIN categories c ON p.id = c.product_id
-        LEFT JOIN products_image pi ON pi.product_id = p.id AND pi.isCover = TRUE
-        WHERE 1=1`
-        ;
+        JOIN categories c ON p.id = c.product_id
+        LEFT JOIN games g ON p.id = g.product_id
+        LEFT JOIN accessories a ON p.id = a.product_id
+        LEFT JOIN consoles con ON p.id = con.product_id
+        LEFT JOIN products_image pi ON p.id = pi.product_id AND pi.isCover = TRUE
+        WHERE 1=1
+    `;
     const queryParams = [];
 
     if (name) {
