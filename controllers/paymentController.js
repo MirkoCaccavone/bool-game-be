@@ -60,6 +60,9 @@ const sendConfirmationEmail = async (userDetails, cartItems, total) => {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS,
         },
+        tls: {
+            rejectUnauthorized: false, // Ignora la verifica del certificato TLS
+        },
     });
 
     // Email di conferma per l'ordine
@@ -151,8 +154,24 @@ export const confirmPaymentAndSendEmails = async (req, res) => {
 
 
 
-// import Stripe from 'stripe';
-// import nodemailer from 'nodemailer';
+    // // Mappa gli articoli del carrello per creare i line_items per Stripe
+    // const line_items = cartItems.map(item => {
+    //     // Verifica che il prezzo del prodotto sia valido
+    //     if (!item.price || isNaN(item.price) || item.price <= 0) {
+    //         return res.status(400).send('❌ Prezzo non valido per un prodotto.');
+    //     }
+    //     return {
+    //         price_data: {
+    //             currency: 'eur',
+    //             product_data: {
+    //                 name: item.name,
+    //                 images: [item.image_url],
+    //             },
+    //             unit_amount: Math.round(item.price * 100), // Arrotonda il prezzo in centesimi
+    //         },
+    //         quantity: item.quantity,
+    //     };
+    // });
 
 // // Inizializza Stripe con la tua chiave segreta
 // const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
