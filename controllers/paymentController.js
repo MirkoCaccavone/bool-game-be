@@ -61,7 +61,7 @@ const sendConfirmationEmail = async (userDetails, cartItems, total) => {
             pass: process.env.EMAIL_PASS,
         },
         tls: {
-            rejectUnauthorized: false, // Ignora la verifica del certificato TLS
+            rejectUnauthorized: false, // Ignora la verifica del certificato TLS (Transport Layer Security) è un certificato digitale che serve per cifrare le comunicazioni tra un client (ad esempio, un browser) e un server
         },
     });
 
@@ -150,6 +150,7 @@ export const confirmPaymentAndSendEmails = async (req, res) => {
         res.status(500).json({ error: '❌ Errore nell\'invio delle email' });
     }
 };
+
 
 
 
