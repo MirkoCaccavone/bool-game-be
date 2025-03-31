@@ -4,7 +4,6 @@ import nodemailer from 'nodemailer';
 
 dotenv.config();
 
-
 // Inizializza Stripe con la chiave segreta
 const stripe = stripePackage(process.env.STRIPE_SECRET_KEY);
 
@@ -16,8 +15,8 @@ export const createCheckoutSession = async (req, res) => {
     console.log('🛍️ Carrello ricevuto:', cartItems);
     console.log('📧 Dettagli utente ricevuti:', userDetails);
 
-  // Calcola il totale dell'ordine in centesimi (Stripe richiede l'importo in centesimi)
-    const amount = cartItems.reduce((total, item) => total + item.price * 100 * item.quantity, 0);
+    // Calcola il totale dell'ordine in centesimi (Stripe richiede l'importo in centesimi)
+    const amount = Math.round(cartItems.reduce((total, item) => total + item.price * 100 * item.quantity, 0));
     console.log('💰 Totale calcolato:', amount / 100);
 
     try {
@@ -32,7 +31,7 @@ export const createCheckoutSession = async (req, res) => {
             },
         });
 
-         // Verifica che il client_secret sia stato creato correttamente
+        // Verifica che il client_secret sia stato creato correttamente
         if (!paymentIntent.client_secret) {
             throw new Error("❌ Client secret non generato correttamente.");
         }
@@ -61,7 +60,7 @@ const sendConfirmationEmail = async (userDetails, cartItems, total) => {
             pass: process.env.EMAIL_PASS,
         },
         tls: {
-            rejectUnauthorized: false, // Ignora la verifica del certificato TLS (Transport Layer Security) è un certificato digitale che serve per cifrare le comunicazioni tra un client (ad esempio, un browser) e un server
+            rejectUnauthorized: false, // Ignora la verifica del certificato TLS
         },
     });
 
@@ -90,7 +89,7 @@ const sendConfirmationEmail = async (userDetails, cartItems, total) => {
         `,
     };
 
-     // Crea le opzioni per l'invio della finta fattura
+    // Crea le opzioni per l'invio della finta fattura
     const invoiceMailOptions = {
         from: process.env.EMAIL_USER,
         to: customerEmail,
@@ -122,7 +121,7 @@ const sendConfirmationEmail = async (userDetails, cartItems, total) => {
 
         // Invia la finta fattura al cliente
         await transporter.sendMail(invoiceMailOptions);
-        console.log('✅  Finta fattura inviata');
+        console.log('✅ Finta fattura inviata');
         
     } catch (error) {
         console.error("❌ Errore nell'invio dell'email:", error);
@@ -150,7 +149,6 @@ export const confirmPaymentAndSendEmails = async (req, res) => {
         res.status(500).json({ error: '❌ Errore nell\'invio delle email' });
     }
 };
-
 
 
 
