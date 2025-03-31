@@ -57,3 +57,60 @@ export function adjustStock(req, res) {
     });
   });
 }
+
+
+// Funzione per aggiornare lo stock dei prodotti dopo un acquisto
+export function updateStockAfterPurchase(req, res) {
+  const { cartItems } = req.body;
+
+  if (!cartItems || cartItems.length === 0) {
+    return res.status(400).json({ message: 'Nessun prodotto nel carrello' });
+  }
+
+  // Log per vedere i cartItems ricevuti
+  console.log("🛒  Cart items ricevuti:", cartItems);
+
+  // Itera sui prodotti e aggiorna lo stock
+  let queries = cartItems.map(item => {
+    return new Promise((resolve, reject) => {
+      db.query(
+        'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
+        [item.quantity, item.id, item.quantity],
+        (err, results) => {
+          if (err) return reject(err);
+          if (results.affectedRows === 0) {
+            return reject(`Stock insufficiente per il prodotto ID ${item.id}`);
+          }
+
+          // Dopo l'aggiornamento, recupera lo stock rimanente
+          db.query('SELECT stock FROM products WHERE id = ?', [item.id], (selectErr, selectResults) => {
+            if (selectErr) return reject(selectErr);
+
+            const remainingStock = selectResults[0].stock;
+            console.log(`🛒 Prodotto ID ${item.id}: stock rimanente dopo l'acquisto: ${remainingStock}`);
+            resolve();
+          });
+        }
+      );
+    });
+  });
+
+  // Esegui tutte le query in parallelo
+  Promise.all(queries)
+    .then(() => {
+      // Svuota il carrello (senza necessità di customerId)
+      db.query('DELETE FROM cart', (err) => {
+        if (err) {
+          console.error('Errore durante lo svuotamento del carrello:', err);
+          return res.status(500).json({ message: 'Errore durante lo svuotamento del carrello', error: err });
+        }
+
+        // Risposta positiva se tutte le operazioni sono riuscite
+        res.json({ message: 'Stock aggiornato e carrello svuotato con successo' });
+      });
+    })
+    .catch(err => {
+      console.error('Errore nell’aggiornamento dello stock:', err);
+      res.status(500).json({ message: 'Errore nell’aggiornamento dello stock', error: err });
+    });
+}
