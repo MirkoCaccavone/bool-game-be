@@ -16,10 +16,10 @@ import cors from 'cors';
 const app = express();
 
 // Middleware di logging
-app.use((req, res, next) => {
-    console.log(`Request made to: ${req.originalUrl}`);
-    next();
-});
+// app.use((req, res, next) => {
+//     console.log(`Request made to: ${req.originalUrl}`);
+//     next();
+// });
 
 // Configuro la porta
 const port = process.env.PORT;
@@ -39,6 +39,7 @@ app.use((req, res, next) => {
 import productRoutes from './routes/productRoutes.js';
 import stockRoutes from './routes/stockRoutes.js';
 import paymentRoutes from './routes/paymentRoutes.js';
+
 
 // importo i middleware
 import imagePathMiddleware from './middleware/imagePath.js';
