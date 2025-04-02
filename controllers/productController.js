@@ -14,7 +14,7 @@ export function index(req, res) {
             c.category_name,
             g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
             a.compatibility, a.brand,
-            con.color, con.hardware_specs, con.bundle_included,
+            con.color, con.hardware_specs, con.bundle_included, con.brand_console,
             COALESCE(pi.image_url, p.image_url) AS final_image,
             pi.image_url AS pi_image_url -- Campo per distinguere se l'immagine proviene da products_image
         FROM products p
@@ -51,7 +51,7 @@ export function show(req, res) {
             c.category_name,
             g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
             a.compatibility, a.brand,
-            con.color, con.hardware_specs, con.bundle_included,
+            con.color, con.hardware_specs, con.bundle_included, con.brand_console,
             COALESCE(pi.image_url, p.image_url) AS final_image,
             pi.image_url AS pi_image_url -- Campo per distinguere se l'immagine proviene da products_image
         FROM products p
@@ -106,7 +106,7 @@ export function search(req, res) {
             c.category_name,
             g.game_genre, g.pegi_rating, g.supported_consoles, g.multiplayer, g.online_mode, g.publisher,
             a.compatibility, a.brand,
-            con.color, con.hardware_specs, con.bundle_included,
+            con.color, con.hardware_specs, con.bundle_included, con.brand_console,
             COALESCE(pi.image_url, p.image_url) AS final_image,
             pi.image_url AS pi_image_url -- Campo per distinguere se l'immagine proviene da products_image
         FROM products p
