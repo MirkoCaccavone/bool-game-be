@@ -4,6 +4,7 @@ import dotenv from 'dotenv';
 // Carico le variabili d'ambiente (configuro la chiave segreta di Stripe e altre impostazioni)
 dotenv.config();
 
+// Middleware per il parsing del corpo delle richieste in formato JSON o URL-encoded
 import bodyParser from 'body-parser';
 
 // Importo Express per gestire il server
@@ -14,12 +15,6 @@ import cors from 'cors';
 
 // Inizializzo l'app Express
 const app = express();
-
-// Middleware di logging
-// app.use((req, res, next) => {
-//     console.log(`Request made to: ${req.originalUrl}`);
-//     next();
-// });
 
 // Configuro la porta
 const port = process.env.PORT;

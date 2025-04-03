@@ -58,11 +58,11 @@ export function adjustStock(req, res) {
   });
 }
 
-
 // Funzione per aggiornare lo stock dei prodotti dopo un acquisto
 export function updateStockAfterPurchase(req, res) {
   const { cartItems } = req.body;
 
+  // Se il carrello è vuoto, restituisce un errore
   if (!cartItems || cartItems.length === 0) {
     return res.status(400).json({ message: 'Nessun prodotto nel carrello' });
   }
@@ -73,11 +73,13 @@ export function updateStockAfterPurchase(req, res) {
   // Itera sui prodotti e aggiorna lo stock
   let queries = cartItems.map(item => {
     return new Promise((resolve, reject) => {
+      // Query per scalare lo stock del prodotto solo se la quantità disponibile è sufficiente
       db.query(
         'UPDATE products SET stock = stock - ? WHERE id = ? AND stock >= ?',
         [item.quantity, item.id, item.quantity],
         (err, results) => {
           if (err) return reject(err);
+          // Se nessuna riga è stata aggiornata, significa che lo stock era insufficiente
           if (results.affectedRows === 0) {
             return reject(`Stock insufficiente per il prodotto ID ${item.id}`);
           }
@@ -86,9 +88,10 @@ export function updateStockAfterPurchase(req, res) {
           db.query('SELECT stock FROM products WHERE id = ?', [item.id], (selectErr, selectResults) => {
             if (selectErr) return reject(selectErr);
 
+            // Ottiene il valore dello stock aggiornato
             const remainingStock = selectResults[0].stock;
             console.log(`🛒 Prodotto ID ${item.id}: stock rimanente dopo l'acquisto: ${remainingStock}`);
-            resolve();
+            resolve();  // Indica che l'operazione per questo prodotto è completata con successo
           });
         }
       );
